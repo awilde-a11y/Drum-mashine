@@ -23,7 +23,6 @@ for(const key in samples){
 
 const res = await fetch(samples[key])
 const arr = await res.arrayBuffer()
-
 buffers[key] = await audio.decodeAudioData(arr)
 
 }
@@ -32,12 +31,11 @@ buffers[key] = await audio.decodeAudioData(arr)
 
 function playSample(name){
 
+if(!buffers[name]) return
+
 const src = audio.createBufferSource()
-
 src.buffer = buffers[name]
-
 src.connect(audio.destination)
-
 src.start()
 
 }
@@ -53,14 +51,14 @@ osc.frequency.value = 55
 gain.gain.setValueAtTime(1,audio.currentTime)
 gain.gain.exponentialRampToValueAtTime(
 0.001,
-audio.currentTime + 0.5
+audio.currentTime + 0.4
 )
 
 osc.connect(gain)
 gain.connect(audio.destination)
 
 osc.start()
-osc.stop(audio.currentTime + 0.5)
+osc.stop(audio.currentTime + 0.4)
 
 }
 
@@ -72,12 +70,6 @@ tracks.forEach(track=>{
 
 pattern[track] = new Array(steps).fill(false)
 
-const label = document.createElement("div")
-label.className="track-label"
-label.innerText=track.toUpperCase()
-
-seq.appendChild(label)
-
 for(let i=0;i<steps;i++){
 
 const cell = document.createElement("div")
@@ -86,7 +78,6 @@ cell.className="cell"
 cell.onclick = ()=>{
 
 pattern[track][i] = !pattern[track][i]
-
 cell.classList.toggle("active")
 
 }
@@ -105,7 +96,7 @@ tracks.forEach(track=>{
 
 if(pattern[track][step]){
 
-if(track==="bass"){
+if(track === "bass"){
 playBass()
 }else{
 playSample(track)
@@ -115,24 +106,25 @@ playSample(track)
 
 })
 
-step = (step+1)%steps
+step = (step + 1) % steps
 
 }
 
-function start(){
+async function start(){
 
 if(interval) return
 
-const stepTime = (60/bpm)/4*1000
+await audio.resume()
 
-interval = setInterval(playStep,stepTime)
+const stepTime = (60 / bpm) / 4 * 1000
+
+interval = setInterval(playStep, stepTime)
 
 }
 
 function stop(){
 
 clearInterval(interval)
-
 interval = null
 
 }
@@ -149,16 +141,14 @@ JSON.stringify(pattern)
 function loadPattern(){
 
 const data = localStorage.getItem("drumPattern")
-
 if(!data) return
 
 const saved = JSON.parse(data)
-
-Object.assign(pattern,saved)
+Object.assign(pattern, saved)
 
 const cells = document.querySelectorAll(".cell")
 
-let index=0
+let index = 0
 
 tracks.forEach(track=>{
 
@@ -183,31 +173,28 @@ const blob = new Blob([data],{type:"application/json"})
 const url = URL.createObjectURL(blob)
 
 const a = document.createElement("a")
-a.href=url
-a.download="drum-pattern.json"
-
+a.href = url
+a.download = "drum-pattern.json"
 a.click()
 
 }
 
-document.getElementById("start").onclick=start
-document.getElementById("stop").onclick=stop
-document.getElementById("save").onclick=savePattern
-document.getElementById("load").onclick=loadPattern
-document.getElementById("download").onclick=downloadPattern
+document.getElementById("start").onclick = start
+document.getElementById("stop").onclick = stop
+document.getElementById("save").onclick = savePattern
+document.getElementById("load").onclick = loadPattern
+document.getElementById("download").onclick = downloadPattern
 
-document.getElementById("bpm").oninput = e=>{
+document.getElementById("bpm").oninput = e => {
 
 bpm = e.target.value
 
 if(interval){
-
 stop()
 start()
-
 }
 
 }
 
-loadSamples()
 createGrid()
+loadSamples()
